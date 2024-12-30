@@ -4,6 +4,13 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+// Oyuncu ve düşman uçak görselleri
+const playerImg = new Image();
+playerImg.src = 'player.png';
+
+const enemyImg = new Image();
+enemyImg.src = 'enemy.png';
+
 let planeX = canvas.width / 2;
 let planeY = canvas.height - 100;
 let planeSpeed = 10;
@@ -14,6 +21,14 @@ let score = 0;
 let bullets = [];
 let enemies = [];
 let enemySpeed = 0.2;
+
+// Bulutlar
+let clouds = [
+    { x: 100, y: 50, width: 120, height: 60 },
+    { x: 400, y: 150, width: 150, height: 70 },
+    { x: 700, y: 80, width: 100, height: 50 },
+    { x: 1000, y: 200, width: 130, height: 60 },
+];
 
 document.addEventListener('keydown', movePlane);
 document.addEventListener('keydown', shootBullet);
@@ -40,8 +55,7 @@ function shootBullet(event) {
 }
 
 function drawPlane() {
-    ctx.fillStyle = 'red';
-    ctx.fillRect(planeX, planeY, planeWidth, planeHeight);
+    ctx.drawImage(playerImg, planeX, planeY, planeWidth, planeHeight);
 }
 
 function drawBullets() {
@@ -58,7 +72,7 @@ function drawBullets() {
 }
 
 function generateEnemy() {
-    if (Math.random() < 0.01) {  // Düşman oluşma oranı daha da düşürüldü
+    if (Math.random() < 0.01) { // Düşman oluşma olasılığı
         let enemyX = Math.random() * (canvas.width - 50);
         let enemyY = -50;
         enemies.push({ x: enemyX, y: enemyY, width: 50, height: 50 });
@@ -66,10 +80,9 @@ function generateEnemy() {
 }
 
 function drawEnemies() {
-    ctx.fillStyle = 'green';
     enemies.forEach((enemy, index) => {
         enemy.y += enemySpeed;
-        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        ctx.drawImage(enemyImg, enemy.x, enemy.y, enemy.width, enemy.height);
 
         // Collision detection with bullets
         bullets.forEach((bullet, bIndex) => {
@@ -91,6 +104,16 @@ function drawEnemies() {
     });
 }
 
+function drawClouds() {
+    ctx.fillStyle = 'white';
+    clouds.forEach(cloud => {
+        // Bulutu çizmek için oval benzeri bir şekil
+        ctx.beginPath();
+        ctx.ellipse(cloud.x, cloud.y, cloud.width / 2, cloud.height / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+    });
+}
+
 function updateScore() {
     document.getElementById('score').textContent = `Skor: ${score}`;
 }
@@ -103,11 +126,12 @@ function increaseDifficulty() {
 
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawClouds(); // Bulutları çiz
     drawPlane();
     drawBullets();
     generateEnemy();
     drawEnemies();
-    increaseDifficulty();  // Zorluk artışı
+    increaseDifficulty();
     updateScore();
     requestAnimationFrame(gameLoop);
 }
