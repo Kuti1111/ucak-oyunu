@@ -4,12 +4,15 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// Oyuncu ve düşman uçak görselleri
+// Görseller
 const playerImg = new Image();
-playerImg.src = 'player.png';
+playerImg.src = 'player_transparent.png'; // Oyuncu uçağı
 
 const enemyImg = new Image();
-enemyImg.src = 'enemy.png';
+enemyImg.src = 'enemy_darkened.png'; // Düşman uçağı
+
+const bulletImg = new Image();
+bulletImg.src = 'bullet.png'; // Mermi görseli
 
 let planeX = canvas.width / 2;
 let planeY = canvas.height - 100;
@@ -18,17 +21,9 @@ let planeWidth = 50;
 let planeHeight = 50;
 let score = 0;
 
-let bullets = [];
+let bullets = []; // Bu tanım eksikse oyun hata verebilir
 let enemies = [];
 let enemySpeed = 0.2;
-
-// Bulutlar
-let clouds = [
-    { x: 100, y: 50, width: 120, height: 60 },
-    { x: 400, y: 150, width: 150, height: 70 },
-    { x: 700, y: 80, width: 100, height: 50 },
-    { x: 1000, y: 200, width: 130, height: 60 },
-];
 
 document.addEventListener('keydown', movePlane);
 document.addEventListener('keydown', shootBullet);
@@ -50,7 +45,7 @@ function movePlane(event) {
 
 function shootBullet(event) {
     if (event.key === ' ' || event.key === 'Enter') {
-        bullets.push({ x: planeX + planeWidth / 2 - 5, y: planeY, width: 10, height: 20 });
+        bullets.push({ x: planeX + planeWidth / 2 - 10, y: planeY, width: 20, height: 40 });
     }
 }
 
@@ -59,12 +54,11 @@ function drawPlane() {
 }
 
 function drawBullets() {
-    ctx.fillStyle = 'yellow';
     bullets.forEach((bullet, index) => {
-        bullet.y -= 10;
-        ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+        bullet.y -= 10; // Mermi yukarı doğru hareket eder
+        ctx.drawImage(bulletImg, bullet.x, bullet.y, bullet.width, bullet.height);
 
-        // Bullets off-screen
+        // Mermi ekran dışına çıktıysa sil
         if (bullet.y < 0) {
             bullets.splice(index, 1);
         }
@@ -72,7 +66,7 @@ function drawBullets() {
 }
 
 function generateEnemy() {
-    if (Math.random() < 0.01) { // Düşman oluşma olasılığı
+    if (Math.random() < 0.01) {
         let enemyX = Math.random() * (canvas.width - 50);
         let enemyY = -50;
         enemies.push({ x: enemyX, y: enemyY, width: 50, height: 50 });
@@ -84,33 +78,23 @@ function drawEnemies() {
         enemy.y += enemySpeed;
         ctx.drawImage(enemyImg, enemy.x, enemy.y, enemy.width, enemy.height);
 
-        // Collision detection with bullets
+        // Çarpışma algılama (mermi ve düşman)
         bullets.forEach((bullet, bIndex) => {
             if (bullet.x < enemy.x + enemy.width &&
                 bullet.x + bullet.width > enemy.x &&
                 bullet.y < enemy.y + enemy.height &&
                 bullet.y + bullet.height > enemy.y) {
-                // Remove enemy and bullet
+                // Düşman ve mermiyi sil
                 enemies.splice(index, 1);
                 bullets.splice(bIndex, 1);
                 score += 10;
             }
         });
 
-        // Remove enemy if off-screen
+        // Ekran dışına çıkan düşmanları sil
         if (enemy.y > canvas.height) {
             enemies.splice(index, 1);
         }
-    });
-}
-
-function drawClouds() {
-    ctx.fillStyle = 'white';
-    clouds.forEach(cloud => {
-        // Bulutu çizmek için oval benzeri bir şekil
-        ctx.beginPath();
-        ctx.ellipse(cloud.x, cloud.y, cloud.width / 2, cloud.height / 2, 0, 0, Math.PI * 2);
-        ctx.fill();
     });
 }
 
@@ -119,14 +103,13 @@ function updateScore() {
 }
 
 function increaseDifficulty() {
-    if (score % 200 === 0 && enemySpeed < 1) { // Her 200 puanda hız artar
+    if (score % 200 === 0 && enemySpeed < 1) {
         enemySpeed += 0.05;
     }
 }
 
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawClouds(); // Bulutları çiz
     drawPlane();
     drawBullets();
     generateEnemy();
