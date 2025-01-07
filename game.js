@@ -14,20 +14,45 @@ enemyImg.src = 'enemy_darkened.png'; // Düşman uçağı
 const bulletImg = new Image();
 bulletImg.src = 'bullet.png'; // Mermi görseli
 
+// Oyuncu özellikleri
 let planeX = canvas.width / 2;
 let planeY = canvas.height - 100;
 let planeSpeed = 10;
 let planeWidth = 50;
 let planeHeight = 50;
+
+// Skor ve cephane
 let score = 0;
+let ammo = 10; // Başlangıç cephanesi
+const maxAmmo = 10;
+let isReloading = false;
 
-let bullets = []; // Bu tanım eksikse oyun hata verebilir
+// Düşmanlar
 let enemies = [];
-let enemySpeed = 0.2;
+let enemySpeed = 0.5; // Başlangıç hızı
 
+// Cephane göstergesini güncelle
+function updateAmmo() {
+    const ammoDisplay = document.getElementById('ammo');
+    if (isReloading) {
+        ammoDisplay.textContent = `Cephane: Dolduruluyor...`;
+    } else {
+        ammoDisplay.textContent = `Cephane: ${ammo}`;
+    }
+}
+
+// Skoru güncelle
+function updateScore() {
+    document.getElementById('score').textContent = `Skor: ${score}`;
+}
+
+// Uçağı çiz
+function drawPlane() {
+    ctx.drawImage(playerImg, planeX, planeY, planeWidth, planeHeight);
+}
+
+// Uçağı hareket ettir
 document.addEventListener('keydown', movePlane);
-document.addEventListener('keydown', shootBullet);
-
 function movePlane(event) {
     if (event.key === 'ArrowLeft' && planeX > 0) {
         planeX -= planeSpeed;
@@ -43,80 +68,97 @@ function movePlane(event) {
     }
 }
 
-function shootBullet(event) {
-    if (event.key === ' ' || event.key === 'Enter') {
-        bullets.push({ x: planeX + planeWidth / 2 - 10, y: planeY, width: 20, height: 40 });
+// Cephane doldur
+document.addEventListener('keydown', reloadAmmo);
+function reloadAmmo(event) {
+    if (event.key === 'r' && !isReloading && ammo < maxAmmo) {
+        isReloading = true;
+        updateAmmo();
+        setTimeout(() => {
+            ammo = maxAmmo;
+            isReloading = false;
+            updateAmmo();
+        }, 2000); // 2 saniyede cephane doluyor
     }
 }
 
-function drawPlane() {
-    ctx.drawImage(playerImg, planeX, planeY, planeWidth, planeHeight);
-}
-
+// Mermileri çiz
+let bullets = [];
 function drawBullets() {
     bullets.forEach((bullet, index) => {
-        bullet.y -= 10; // Mermi yukarı doğru hareket eder
+        bullet.y -= 10;
         ctx.drawImage(bulletImg, bullet.x, bullet.y, bullet.width, bullet.height);
 
-        // Mermi ekran dışına çıktıysa sil
+        // Ekran dışına çıkan mermiyi sil
         if (bullet.y < 0) {
             bullets.splice(index, 1);
         }
     });
 }
 
-function generateEnemy() {
-    if (Math.random() < 0.01) {
-        let enemyX = Math.random() * (canvas.width - 50);
-        let enemyY = -50;
-        enemies.push({ x: enemyX, y: enemyY, width: 50, height: 50 });
+// Mermi at
+document.addEventListener('keydown', shootBullet);
+function shootBullet(event) {
+    if ((event.key === ' ' || event.key === 'Enter') && ammo > 0 && !isReloading) {
+        bullets.push({ x: planeX + planeWidth / 2 - 10, y: planeY, width: 20, height: 40 });
+        ammo--;
+        updateAmmo();
     }
 }
 
+// Düşmanları çiz
 function drawEnemies() {
     enemies.forEach((enemy, index) => {
-        enemy.y += enemySpeed;
+        enemy.y += enemySpeed; // Düşmanlar hızla hareket eder
         ctx.drawImage(enemyImg, enemy.x, enemy.y, enemy.width, enemy.height);
 
-        // Çarpışma algılama (mermi ve düşman)
+        // Çarpışma kontrolü (mermi ve düşman)
         bullets.forEach((bullet, bIndex) => {
-            if (bullet.x < enemy.x + enemy.width &&
+            if (
+                bullet.x < enemy.x + enemy.width &&
                 bullet.x + bullet.width > enemy.x &&
                 bullet.y < enemy.y + enemy.height &&
-                bullet.y + bullet.height > enemy.y) {
-                // Düşman ve mermiyi sil
+                bullet.y + bullet.height > enemy.y
+            ) {
                 enemies.splice(index, 1);
                 bullets.splice(bIndex, 1);
                 score += 10;
+                updateScore();
             }
         });
 
-        // Ekran dışına çıkan düşmanları sil
         if (enemy.y > canvas.height) {
             enemies.splice(index, 1);
         }
     });
 }
 
-function updateScore() {
-    document.getElementById('score').textContent = `Skor: ${score}`;
-}
-
-function increaseDifficulty() {
-    if (score % 200 === 0 && enemySpeed < 1) {
-        enemySpeed += 0.05;
+// Düşman üret
+function generateEnemy() {
+    if (Math.random() < 0.01) {
+        enemies.push({ x: Math.random() * (canvas.width - 50), y: -50, width: 50, height: 50 });
     }
 }
 
-function gameLoop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawPlane();
-    drawBullets();
-    generateEnemy();
-    drawEnemies();
-    increaseDifficulty();
-    updateScore();
-    requestAnimationFrame(gameLoop);
+// Zorluk seviyesini artır
+function increaseDifficulty() {
+    if (score % 100 === 0 && score !== 0) {
+        enemySpeed += 0.1; // Her 100 puanda hız artar
+    }
 }
 
+// Oyun döngüsü
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Ekranı temizle
+    drawPlane(); // Uçağı çiz
+    drawBullets(); // Mermileri çiz
+    generateEnemy(); // Yeni düşman oluştur
+    drawEnemies(); // Düşmanları çiz
+    increaseDifficulty(); // Zorluk artır
+    requestAnimationFrame(gameLoop); // Döngüyü başlat
+}
+
+// Oyunu başlat
+updateAmmo();
+updateScore();
 gameLoop();
